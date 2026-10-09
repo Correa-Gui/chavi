@@ -17,6 +17,19 @@ Objetivo: repositório rodando, login funcionando, isolamento entre imobiliária
 - [x] Tokens do `DESIGN.md` no Tailwind + shell da aplicação (menu escuro, painel areia)
 - [x] Worker com pg-boss rodando um job de exemplo
 
+## Marco Demo · G
+Objetivo: mostrar o Chavi a um cliente antes da Fase 1. Site e worker publicados (VPS Hostinger,
+ADR-017), login, as três telas do mockup com dados fictícios e uma fatia real de WhatsApp
+(Evolution/Baileys em número de teste → triagem por IA via OpenAI → `RulesScorerV1` → painel e
+ficha). Versões enxutas das Fases 1, 2 e 4, com as mesmas tabelas, interfaces e RLS. Fora do
+escopo: simulador, CSV, distribuição, SLA e convite. Plano e critérios de aceite:
+`docs/plans/marco-demo.md`.
+- [x] D0 · PR #1 integrado, hardening do pg-boss aplicado no chavi-dev, ADRs 017 a 019
+- [ ] D1 · Tabelas de leads, conversas e triagem com RLS e testes; normalização de telefone; login OTP; tenant "Demo Imóveis" com dados fictícios
+- [ ] D2 · `WhatsAppGateway` + `EvolutionAdapter`; webhook idempotente → outbox → `whatsapp.ingest` → lead
+- [ ] D3 · `LlmClient` (OpenAI), `TriageEngine`, `RulesScorerV1`, job `triage.step`, `ai_decisions` e eval
+- [ ] D4 · Painel, funil e ficha com dados reais; publicação na VPS com Docker Compose e Caddy; roteiro da demo
+
 ## Fase 1: Captura e tratamento · M
 Objetivo: lead entra por qualquer origem do MVP, sem duplicar, com origem e consentimento.
 - [ ] `packages/core`: normalização de telefone (E.164 BR) e e-mail, deduplicação, mesclagem

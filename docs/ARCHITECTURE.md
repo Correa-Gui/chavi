@@ -24,9 +24,9 @@ no WhatsApp ou no LLM nunca perde o lead: ele fica "Em triagem" e o job tenta de
 | UI | Tailwind CSS + shadcn/ui + Motion (`motion/react`) | Componentes prontos e consistentes, animações declarativas |
 | Banco/Auth/Storage | Supabase (Postgres + Auth + Storage) | RLS nativo para multi-tenant, auth pronta |
 | Fila e jobs | pg-boss no mesmo Postgres | Retry, agendamento (SLA), `singletonKey` para idempotência, sem infra extra |
-| Worker | Node (processo separado `apps/worker`) | Consome a fila; deploy em Railway/Fly/Render |
+| Worker | Node (processo separado `apps/worker`) | Consome a fila; container na VPS junto com o web (ADR-017) |
 | Validação | Zod | Webhooks, formulários, env |
-| LLM | Anthropic API (Claude) | Conversa de triagem e extração estruturada (tool use) |
+| LLM | OpenAI (Responses API, Structured Outputs) atrás do `LlmClient` | Conversa de triagem e extração estruturada; provedor trocável (ADR-018) |
 | WhatsApp | Evolution API v2 atrás de `WhatsAppGateway` | O fundador já tem; adaptador permite trocar |
 | Testes | Vitest, Playwright, testes de RLS contra Supabase local | |
 | Logs | pino (JSON) | Estruturado, com `tenantId` |
@@ -51,7 +51,7 @@ packages/
   db/                       Clientes Supabase, tipos gerados, repositórios
   integrations/
     whatsapp/               WhatsAppGateway + EvolutionAdapter (+ futuro CloudApiAdapter)
-    llm/                    Cliente Anthropic, prompts versionados, extração estruturada
+    llm/                    LlmClient + OpenAiLlmClient, prompts versionados, extração estruturada
   config/                   eslint, tsconfig, tailwind preset (tokens do DESIGN.md)
 supabase/
   migrations/               SQL versionado
@@ -184,7 +184,7 @@ interface WhatsAppGateway {
 ```
 - `EvolutionAdapter`: Evolution API v2. A instância pode usar a integração `WHATSAPP-BUSINESS`
   (API oficial, **preferida**) ou `WHATSAPP-BAILEYS` (QR Code, não oficial). Ver ADR-002.
-- `LlmClient`: encapsula a Anthropic API. Modelo e versão do prompt vêm de configuração,
+- `LlmClient`: encapsula o provedor de LLM (hoje OpenAI, ADR-018). Modelo e versão do prompt vêm de configuração,
   nunca fixos no código de domínio. Timeout, retry com backoff e fallback para "triagem pausada".
 
 ## 8. Observabilidade

@@ -170,8 +170,9 @@ Fase 4) não precisa reescrever o audit_log, porque ele não guarda dado pessoal
   autorização para esse acesso.
 - `pg-boss` fixado em 12.37.0 (a 12.37.1 tinha menos de 1 dia e a política de idade mínima do
   pnpm a recusa); `lucide-react` em 1.48.0 pelo mesmo motivo.
-- Migration `20261010000000_pgboss_schema_hardening.sql` cria o schema `pgboss` sem grants para
-  `anon`/`authenticated` (ADR-006). **Ainda não aplicada no chavi-dev.**
+- Migration `20261009122026_pgboss_schema_hardening.sql` (renomeada para a versão registrada no
+  chavi-dev) cria o schema `pgboss` sem grants para `anon`/`authenticated` (ADR-006). Aplicada no
+  chavi-dev em 2026-10-09.
 - Linha `failed` da outbox guarda `last_error` (truncado a 300 caracteres, sem payload) e volta a
   `pending` com `pnpm jobs:replay --id <uuid>` ou `--failed [--tenant <uuid>]`. O replay só toca
   em linhas `failed`; o erro antigo fica até o relay ter sucesso. Job que falha depois de
@@ -182,6 +183,40 @@ Fase 4) não precisa reescrever o audit_log, porque ele não guarda dado pessoal
 **Consequências:** reaplicar `apply_migration` no chavi-dev e rodar os advisors antes de usar o
 worker contra a nuvem; revisitar o pg-boss 12.37.x e o lucide quando passarem da idade mínima.
 
+## ADR-017: Marco Demo publicado numa VPS da Hostinger com Docker Compose (2026-10-09)
+**Contexto:** o fundador tem uma VPS KVM na Hostinger e domínio próprio, e a Evolution API já roda
+nessa VPS. O plano original citava Vercel (web) e Railway (worker).
+**Decisão:** web (Next.js `output: 'standalone'`) e worker rodam como containers na mesma VPS, num
+`docker-compose.yml` em `deploy/`, atrás de um Caddy com TLS automático no domínio (`APP_DOMAIN`).
+Os containers entram na rede Docker da Evolution: o worker chama a Evolution pela rede interna e a
+Evolution entrega o webhook ao web também pela rede interna, sempre com segredo no header.
+Segredos ficam num `.env` na VPS, preenchido pelo fundador.
+**Consequências:** um lugar só para operar; o deploy é `git pull` + `docker compose up -d --build`.
+Backup, atualização do SO e monitoramento da VPS passam a ser responsabilidade nossa. Revisar
+antes do piloto (ex.: imagens no GHCR e deploy pelo CI).
+
+## ADR-018: LLM da triagem via OpenAI, atrás do `LlmClient` (2026-10-09)
+**Contexto:** o fundador escolheu a OpenAI para a conversa de triagem. ARCHITECTURE §2/§7 citavam
+a Anthropic API.
+**Decisão:** `LlmClient` em `packages/integrations/llm` com a implementação `OpenAiLlmClient`
+(SDK `openai`, Responses API com Structured Outputs via Zod, `store: false`). O modelo vem de
+`OPENAI_MODEL` e a versão do prompt da configuração; nada fixo no domínio. O LLM só conversa e
+extrai (ADR-003); toda chamada grava `ai_decisions`.
+**Consequências:** trocar de provedor é escrever outro `LlmClient`. Dados da triagem passam a ser
+tratados pela OpenAI: o texto de consentimento precisa mencionar o uso de IA de terceiro (Q12).
+Responde a Q5 (provedor); o modelo exato fica com o fundador.
+
+## ADR-019: Marco Demo usa o chavi-dev com um tenant de apresentação próprio (2026-10-09)
+**Contexto:** a demo publicada usa o mesmo projeto Supabase dos testes (chavi-dev). Os testes de
+RLS criam e apagam dados e dependem da composição exata dos tenants "Imobiliária Demo" e
+"Imobiliária Teste".
+**Decisão:** a apresentação usa um terceiro tenant, "Demo Imóveis" (UUID fixo), que os testes não
+tocam e em que os usuários `*.chavi.test` não têm membership. O fundador entra nele por script
+(`pnpm demo:add-user`). Dados da demo vêm de `pnpm db:seed:demo` (fictícios, idempotente).
+Limites provisórios do scorer (Q3) e o texto de consentimento `v0-rascunho` (Q12) valem só até a
+revisão com o Pedro e com o advogado.
+**Consequências:** produção será outro projeto Supabase; nada da demo é migrado para lá.
+
 ---
 
 ## Perguntas em aberto (responder antes da fase indicada)
@@ -190,13 +225,13 @@ worker contra a nuvem; revisitar o pg-boss 12.37.x e o lucide quando passarem da
 |---|---|---|---|
 | Q1 | Nome definitivo do produto | 4 | |
 | Q2 | Quais perguntas exatas a IA faz e em que ordem? (validar com o Pedro) | 2 | |
-| Q3 | O que é "quente" na prática? Renda mínima, entrada mínima, prazo máximo | 2 | |
+| Q3 | O que é "quente" na prática? Renda mínima, entrada mínima, prazo máximo | 2 | Provisório para o Marco Demo (ADR-019): Quente = renda ≥ R$ 2.000, CLT/servidor ≥ 6 meses ou autônomo com comprovação, prazo ≤ 6 meses. Morno = perfil compatível com prazo 6–12 meses ou sem entrada/FGTS. Frio = prazo > 12 meses. Fora do perfil = renda < R$ 1.500 ou > R$ 12.000 (confirmar teto MCMV). Validar com o Pedro. |
 | Q4 | Horário em que a IA atende: 24 h ou só fora do expediente? | 2 | |
-| Q5 | Qual modelo Claude usar na conversa (custo × qualidade)? Testar Haiku e Sonnet no eval | 2 | |
+| Q5 | Qual modelo usar na conversa (custo × qualidade)? | 2 | Provedor: OpenAI (ADR-018). Modelo exato: o fundador informa (`OPENAI_MODEL`). |
 | Q6 | SLA padrão de 1º contato (sugestão: 10 min em horário comercial) | 3 | |
 | Q7 | Corretor vê leads não atribuídos? | 3 | |
 | Q8 | Redistribuição automática ligada por padrão? | 3 | |
 | Q9 | Quem acessa o quê: papéis de gerente, corretor e financeiro | 4 | |
 | Q10 | Lista de motivos de perda | 4 | |
 | Q11 | Regras de comissão: percentual, beneficiários, divisão, gatilho de liberação | 6 | |
-| Q12 | Texto de consentimento LGPD (revisar com advogado) | 1 | |
+| Q12 | Texto de consentimento LGPD (revisar com advogado) | 1 | Marco Demo usa `v0-rascunho` (menciona IA de terceiro). Revisão jurídica obrigatória antes do piloto. |

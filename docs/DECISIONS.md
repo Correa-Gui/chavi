@@ -151,6 +151,30 @@ tenant apagava todo o histórico dele, e qualquer coluna nova com dado pessoal e
 constraint cresce junto com o schema (ex.: campos de lead na Fase 1). Exclusão de titular (LGPD,
 Fase 4) não precisa reescrever o audit_log, porque ele não guarda dado pessoal.
 
+## ADR-016: Relay transacional da outbox, testes em PGlite, fontes locais e pg-boss 12.37.0 (2026-10-09)
+**Contexto:** T10 a T15 da fase 0 pedem decisões que o plano não fechava.
+**Decisão:**
+- O relay da outbox (`apps/worker/src/outbox-relay.ts`) lê as linhas `pending` com
+  `for update skip locked` e chama `boss.send` **na mesma transação** que marca a linha como
+  `enqueued` (`db` por chamada). O job usa o id da outbox como `id` e `singletonKey`, então uma
+  linha relida é recusada pelo pg-boss (`send` devolve `null`) e só é marcada. Falha ao enfileirar
+  incrementa `attempts`, guarda `last_error` (truncado), adia `run_after` e, na 5ª falha, vira `failed`.
+- O teste de integração do critério 0.8 roda em **PGlite** (Postgres em WASM suportado pelo pg-boss),
+  com a tabela `job_outbox` extraída das migrations. Não cobre concorrência real entre dois workers
+  (PGlite tem uma conexão só); isso fica para teste contra Postgres de verdade antes do piloto.
+- Fontes (Bricolage Grotesque, Geist, Geist Mono) vêm dos pacotes npm `@fontsource-variable/*`
+  (OFL), copiadas para `apps/web/app/fonts` e carregadas com `next/font/local`: nenhuma chamada ao
+  Google Fonts em build ou runtime.
+- Componentes de UI escritos à mão no padrão shadcn (cva + `cn` + Radix Slot), com `components.json`
+  pronto. `shadcn init` baixa do registry de ui.shadcn.com; trocar por `shadcn add` quando houver
+  autorização para esse acesso.
+- `pg-boss` fixado em 12.37.0 (a 12.37.1 tinha menos de 1 dia e a política de idade mínima do
+  pnpm a recusa); `lucide-react` em 1.48.0 pelo mesmo motivo.
+- Migration `20261010000000_pgboss_schema_hardening.sql` cria o schema `pgboss` sem grants para
+  `anon`/`authenticated` (ADR-006). **Ainda não aplicada no chavi-dev.**
+**Consequências:** reaplicar `apply_migration` no chavi-dev e rodar os advisors antes de usar o
+worker contra a nuvem; revisitar o pg-boss 12.37.x e o lucide quando passarem da idade mínima.
+
 ---
 
 ## Perguntas em aberto (responder antes da fase indicada)

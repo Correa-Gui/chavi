@@ -1,4 +1,3 @@
-import type { Pool, PoolClient } from 'pg';
 import type { PgBoss } from 'pg-boss';
 import type { Logger } from 'pino';
 
@@ -12,6 +11,13 @@ type OutboxRow = {
   payload: Record<string, unknown>;
   attempts: number;
 };
+
+/** Só o que o relay usa de uma conexão. `pg.Pool` serve; os testes usam PGlite. */
+export type RelayClient = {
+  query(text: string, values?: unknown[]): Promise<{ rows: unknown[] }>;
+  release(): void;
+};
+export type RelayPool = { connect(): Promise<RelayClient> };
 
 export type RelayResult = { enqueued: number; duplicates: number; failed: number };
 
@@ -27,7 +33,7 @@ export type RelayResult = { enqueued: number; duplicates: number; failed: number
  * linha explicitamente e o handler o usa em tudo que faz.
  */
 export async function relayOutboxOnce(deps: {
-  pool: Pool;
+  pool: RelayPool;
   boss: PgBoss;
   logger: Logger;
   batchSize?: number;
@@ -37,7 +43,7 @@ export async function relayOutboxOnce(deps: {
   const client = await pool.connect();
   try {
     await client.query('begin');
-    const { rows } = await client.query<OutboxRow>(
+    const { rows } = await client.query(
       `select id, tenant_id, name, payload, attempts
          from public.job_outbox
         where status = 'pending' and run_after <= now()
@@ -46,7 +52,7 @@ export async function relayOutboxOnce(deps: {
         for update skip locked`,
       [batchSize],
     );
-    for (const row of rows) {
+    for (const row of rows as OutboxRow[]) {
       await relayRow(client, boss, logger, row, result);
     }
     await client.query('commit');
@@ -60,7 +66,7 @@ export async function relayOutboxOnce(deps: {
 }
 
 async function relayRow(
-  client: PoolClient,
+  client: RelayClient,
   boss: PgBoss,
   logger: Logger,
   row: OutboxRow,
@@ -113,7 +119,7 @@ async function relayRow(
 
 /** Laço do relay: consulta a outbox a cada `intervalMs` até `stop()`. */
 export function startOutboxRelay(deps: {
-  pool: Pool;
+  pool: RelayPool;
   boss: PgBoss;
   logger: Logger;
   intervalMs: number;

@@ -44,8 +44,12 @@ export function createPingHandler(logger: Logger) {
   };
 }
 
-export async function registerSystemPing(boss: PgBoss, logger: Logger): Promise<void> {
+export async function registerSystemPing(
+  boss: PgBoss,
+  logger: Logger,
+  options: { pollingIntervalSeconds?: number } = {},
+): Promise<void> {
   await boss.createQueue(SYSTEM_PING, SYSTEM_PING_QUEUE);
   // Uma tentativa por vez: se uma falhar, o pg-boss reagenda só ela.
-  await boss.work(SYSTEM_PING, { batchSize: 1 }, createPingHandler(logger));
+  await boss.work(SYSTEM_PING, { batchSize: 1, ...options }, createPingHandler(logger));
 }

@@ -14,8 +14,8 @@ Objetivo: repositório rodando, login funcionando, isolamento entre imobiliária
 - [x] Tabelas `tenants`, `memberships`, `profiles` + RLS + função `private.auth_tenant_ids()`
 - [ ] Login (OTP de 6 dígitos por e-mail), convite de usuário para a imobiliária, papéis
 - [x] Testes de RLS (`pnpm test:rls`) rodando no CI
-- [ ] Tokens do `DESIGN.md` no Tailwind + shell da aplicação (menu escuro, painel areia)
-- [ ] Worker com pg-boss rodando um job de exemplo
+- [x] Tokens do `DESIGN.md` no Tailwind + shell da aplicação (menu escuro, painel areia)
+- [x] Worker com pg-boss rodando um job de exemplo
 
 ## Fase 1: Captura e tratamento · M
 Objetivo: lead entra por qualquer origem do MVP, sem duplicar, com origem e consentimento.

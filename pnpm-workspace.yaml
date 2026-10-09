@@ -1,8 +1,10 @@
 packages:
   - apps/*
   - packages/*
+  - scripts
+  - tests/rls
 
-# pnpm 11: scripts de instalação só para dependências explicitamente liberadas.
+# pnpm 11: scripts de instalação só para dependências explicitamente liberadas (ADR-012).
 allowBuilds:
   esbuild: true
   unrs-resolver: false

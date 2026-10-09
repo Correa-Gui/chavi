@@ -11,6 +11,8 @@
     "lint": "eslint .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:rls": "pnpm --filter @chavi/test-rls test:rls",
+    "db:seed": "pnpm --filter @chavi/scripts db:seed",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

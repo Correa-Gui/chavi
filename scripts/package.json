@@ -1,18 +1,19 @@
 {
-  "name": "@chavi/worker",
+  "name": "@chavi/scripts",
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./seed-data": "./src/seed-data.ts",
+    "./target": "./src/target.ts"
+  },
   "scripts": {
-    "dev": "tsx watch --env-file-if-exists=../../.env --env-file-if-exists=../../.env.local src/index.ts",
-    "build": "tsc --noEmit",
+    "db:seed": "tsx --env-file-if-exists=../.env --env-file-if-exists=../.env.local src/seed-users.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@chavi/core": "workspace:*",
-    "@chavi/db": "workspace:*",
-    "pino": "10.4.0",
+    "@supabase/supabase-js": "2.117.3",
     "zod": "4.6.5"
   },
   "devDependencies": {

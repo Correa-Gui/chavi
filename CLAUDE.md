@@ -23,6 +23,7 @@ pnpm test                # vitest (unidade + integração)
 pnpm test:rls            # testes de isolamento entre tenants (exige supabase local)
 pnpm test:e2e            # playwright
 pnpm lint && pnpm typecheck
+pnpm jobs:replay --id <uuid> | --failed   # devolve linhas failed da job_outbox para pending
 supabase start           # banco local
 supabase db reset        # recria o banco a partir das migrations + seed
 pnpm db:types            # regenera tipos TypeScript do banco

@@ -20,6 +20,8 @@ const workerEnvSchema = z.object({
     .string()
     .startsWith('sb_secret_', 'SUPABASE_SECRET_KEY deve ser uma chave secret (sb_secret_...)'),
   DATABASE_URL_DIRECT: databaseUrl,
+  /** Intervalo do relay da outbox. */
+  OUTBOX_POLL_MS: z.coerce.number().int().min(200).max(60_000).default(2000),
 });
 
 export type WorkerEnv = z.infer<typeof workerEnvSchema>;

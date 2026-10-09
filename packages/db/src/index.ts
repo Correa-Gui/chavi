@@ -6,3 +6,5 @@
 export type { Database, Json, Tables, TablesInsert, TablesUpdate, Enums } from './types.gen';
 export { Constants } from './types.gen';
 export type { ChaviClient, MembershipRole, JobOutboxStatus } from './types';
+export { enqueue, JOB_NAMES } from './enqueue';
+export type { EnqueueInput, EnqueueResult, JobName } from './enqueue';

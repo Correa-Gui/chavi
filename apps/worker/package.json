@@ -7,17 +7,23 @@
     "dev": "tsx watch --env-file-if-exists=../../.env --env-file-if-exists=../../.env.local src/index.ts",
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "jobs:replay": "tsx --env-file-if-exists=../../.env --env-file-if-exists=../../.env.local src/replay-cli.ts",
+    "test:concurrency": "vitest run src/outbox.concurrency.test.ts"
   },
   "dependencies": {
     "@chavi/core": "workspace:*",
     "@chavi/db": "workspace:*",
+    "pg": "8.23.1",
+    "pg-boss": "12.37.0",
     "pino": "10.4.0",
     "zod": "4.6.5"
   },
   "devDependencies": {
     "@chavi/config": "workspace:*",
+    "@electric-sql/pglite": "0.5.8",
     "@types/node": "26.6.4",
+    "@types/pg": "8.23.1",
     "tsx": "4.23.15",
     "typescript": "6.0.3",
     "vitest": "5.0.3"

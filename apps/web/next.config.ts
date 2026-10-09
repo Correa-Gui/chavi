@@ -9,6 +9,8 @@ loadEnvConfig(rootDir);
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Evita o Next gerar AGENTS.md em apps/web; o do repositório já cobre os agentes.
+  agentRules: false,
   transpilePackages: ['@chavi/core', '@chavi/db'],
 };
 

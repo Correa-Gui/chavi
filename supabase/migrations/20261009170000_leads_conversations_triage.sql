@@ -73,7 +73,9 @@ create table public.leads (
   deleted_at timestamptz,
   -- Critério 4.2: "Perdido" exige motivo, também no banco.
   constraint leads_lost_requires_reason check (stage <> 'lost' or lost_reason is not null),
-  constraint leads_reason_only_when_lost check (stage = 'lost' or lost_reason is null)
+  constraint leads_reason_only_when_lost check (stage = 'lost' or lost_reason is null),
+  -- Alvo das FKs compostas: filho e lead sempre no mesmo tenant.
+  unique (tenant_id, id)
 );
 -- Base da deduplicação (ARCHITECTURE §5).
 create unique index leads_tenant_phone_uidx on public.leads (tenant_id, phone_e164)
@@ -87,13 +89,14 @@ create index leads_source_id_idx on public.leads (source_id);
 create table public.lead_events (
   id bigint generated always as identity primary key,
   tenant_id uuid not null references public.tenants (id) on delete cascade,
-  lead_id uuid not null references public.leads (id) on delete cascade,
+  lead_id uuid not null,
   type text not null check (type ~ '^[a-z][a-z_.]*$' and length(type) <= 60),
   actor_type text not null check (actor_type in ('system', 'ai', 'user')),
   actor_id uuid,
   -- Só metadados (ids, etapas, origem). Nunca conteúdo de mensagem, telefone ou renda.
   data jsonb not null default '{}'::jsonb check (jsonb_typeof(data) = 'object'),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  foreign key (tenant_id, lead_id) references public.leads (tenant_id, id) on delete cascade
 );
 create index lead_events_lead_created_idx on public.lead_events (lead_id, created_at);
 create index lead_events_tenant_id_idx on public.lead_events (tenant_id);
@@ -101,7 +104,7 @@ create index lead_events_tenant_id_idx on public.lead_events (tenant_id);
 create table public.conversations (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenants (id) on delete cascade,
-  lead_id uuid not null references public.leads (id) on delete cascade,
+  lead_id uuid not null,
   channel text not null default 'whatsapp' check (channel in ('whatsapp')),
   status public.conversation_status not null default 'open',
   mode public.conversation_mode not null default 'ai',
@@ -112,14 +115,16 @@ create table public.conversations (
   last_inbound_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (tenant_id, channel, wa_instance, wa_jid)
+  unique (tenant_id, channel, wa_instance, wa_jid),
+  unique (tenant_id, id),
+  foreign key (tenant_id, lead_id) references public.leads (tenant_id, id) on delete cascade
 );
 create index conversations_lead_id_idx on public.conversations (lead_id);
 
 create table public.messages (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenants (id) on delete cascade,
-  conversation_id uuid not null references public.conversations (id) on delete cascade,
+  conversation_id uuid not null,
   direction public.message_direction not null,
   sender public.message_sender not null,
   body text check (body is null or length(body) <= 4096),
@@ -127,7 +132,9 @@ create table public.messages (
   provider_message_id text check (provider_message_id is null or length(provider_message_id) <= 128),
   status public.message_status not null,
   created_at timestamptz not null default now(),
-  unique (tenant_id, provider_message_id)
+  unique (tenant_id, provider_message_id),
+  foreign key (tenant_id, conversation_id) references public.conversations (tenant_id, id)
+    on delete cascade
 );
 create index messages_conversation_created_idx on public.messages (conversation_id, created_at);
 create index messages_tenant_id_idx on public.messages (tenant_id);
@@ -135,8 +142,8 @@ create index messages_tenant_id_idx on public.messages (tenant_id);
 create table public.triage_sessions (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenants (id) on delete cascade,
-  lead_id uuid not null references public.leads (id) on delete cascade,
-  conversation_id uuid not null unique references public.conversations (id) on delete cascade,
+  lead_id uuid not null,
+  conversation_id uuid not null unique,
   state public.triage_state not null default 'greeting',
   -- Respostas extraídas (renda, vínculo, FGTS, entrada, prazo, região). Dinheiro em centavos.
   answers jsonb not null default '{}'::jsonb check (jsonb_typeof(answers) = 'object'),
@@ -145,7 +152,10 @@ create table public.triage_sessions (
   prompt_version text,
   started_at timestamptz not null default now(),
   finished_at timestamptz,
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  foreign key (tenant_id, lead_id) references public.leads (tenant_id, id) on delete cascade,
+  foreign key (tenant_id, conversation_id) references public.conversations (tenant_id, id)
+    on delete cascade
 );
 create index triage_sessions_lead_id_idx on public.triage_sessions (lead_id);
 create index triage_sessions_tenant_id_idx on public.triage_sessions (tenant_id);
@@ -153,7 +163,7 @@ create index triage_sessions_tenant_id_idx on public.triage_sessions (tenant_id)
 create table public.ai_decisions (
   id bigint generated always as identity primary key,
   tenant_id uuid not null references public.tenants (id) on delete cascade,
-  lead_id uuid not null references public.leads (id) on delete cascade,
+  lead_id uuid not null,
   kind public.ai_decision_kind not null,
   model text not null check (length(model) <= 100),
   prompt_version text not null check (length(prompt_version) <= 60),
@@ -161,7 +171,8 @@ create table public.ai_decisions (
   input_summary jsonb not null default '{}'::jsonb check (jsonb_typeof(input_summary) = 'object'),
   output jsonb not null default '{}'::jsonb check (jsonb_typeof(output) = 'object'),
   latency_ms integer check (latency_ms is null or latency_ms >= 0),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  foreign key (tenant_id, lead_id) references public.leads (tenant_id, id) on delete cascade
 );
 create index ai_decisions_lead_id_idx on public.ai_decisions (lead_id, created_at);
 create index ai_decisions_tenant_id_idx on public.ai_decisions (tenant_id);
@@ -201,9 +212,10 @@ create table public.personal_data_access_log (
   id bigint generated always as identity primary key,
   tenant_id uuid not null references public.tenants (id) on delete cascade,
   actor_id uuid not null default auth.uid(),
-  lead_id uuid not null references public.leads (id) on delete cascade,
+  lead_id uuid not null,
   purpose text not null check (purpose in ('ficha_lead', 'exportacao_titular')),
-  at timestamptz not null default now()
+  at timestamptz not null default now(),
+  foreign key (tenant_id, lead_id) references public.leads (tenant_id, id) on delete cascade
 );
 create index personal_data_access_log_tenant_at_idx on public.personal_data_access_log (tenant_id, at desc);
 create index personal_data_access_log_lead_id_idx on public.personal_data_access_log (lead_id);

@@ -198,6 +198,41 @@ describe('filhos do lead seguem a visibilidade do lead', () => {
   });
 });
 
+describe('filho e lead sempre no mesmo tenant (FK composta)', () => {
+  it('nem a chave secret grava conversa, mensagem, evento ou decisão com tenant trocado', async () => {
+    const attempts: [string, Record<string, unknown>][] = [
+      [
+        'conversations',
+        {
+          tenant_id: B,
+          lead_id: ids.freeA.lead,
+          wa_instance: `rls-test-${RUN}`,
+          wa_jid: '5516900000000@s.whatsapp.net',
+        },
+      ],
+      [
+        'messages',
+        {
+          tenant_id: B,
+          conversation_id: ids.freeA.conversation,
+          direction: 'inbound',
+          sender: 'lead',
+          status: 'received',
+        },
+      ],
+      ['lead_events', { tenant_id: B, lead_id: ids.freeA.lead, type: 'x', actor_type: 'system' }],
+      [
+        'ai_decisions',
+        { tenant_id: B, lead_id: ids.freeA.lead, kind: 'reply', model: 'x', prompt_version: 'x' },
+      ],
+    ];
+    for (const [table, row] of attempts) {
+      const { error } = await adminClient.from(table).insert(row);
+      expect(error, table).not.toBeNull();
+    }
+  });
+});
+
 describe('tabelas internas não têm leitura para nenhum usuário', () => {
   it.each(['ai_decisions', 'webhook_events', 'whatsapp_instances'])(
     '%s: nem o admin lê',

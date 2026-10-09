@@ -10,9 +10,9 @@ Esforço relativo: P (pequeno) · M (médio) · G (grande). Prompts de cada fase
 ## Fase 0: Fundação · G
 Objetivo: repositório rodando, login funcionando, isolamento entre imobiliárias provado por teste.
 - [x] Monorepo (pnpm + Turborepo), lint, typecheck, Vitest, CI
-- [x] Supabase local, migrations, seed com tenant de demonstração (dev em nuvem: chavi-dev; local só no CI, ADR-010)
-- [x] Tabelas `tenants`, `memberships`, `profiles` + RLS + função `auth_tenant_ids()`
-- [ ] Login (e-mail mágico ou senha), convite de usuário para a imobiliária, papéis
+- [x] Supabase de desenvolvimento na nuvem (chavi-dev) com migrations versionadas e seed de tenants e usuários de teste; Supabase local só no CI (ADR-010)
+- [x] Tabelas `tenants`, `memberships`, `profiles` + RLS + função `private.auth_tenant_ids()`
+- [ ] Login (OTP de 6 dígitos por e-mail), convite de usuário para a imobiliária, papéis
 - [x] Testes de RLS (`pnpm test:rls`) rodando no CI
 - [ ] Tokens do `DESIGN.md` no Tailwind + shell da aplicação (menu escuro, painel areia)
 - [ ] Worker com pg-boss rodando um job de exemplo

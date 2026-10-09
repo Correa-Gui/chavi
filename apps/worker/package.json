@@ -7,7 +7,9 @@
     "dev": "tsx watch --env-file-if-exists=../../.env --env-file-if-exists=../../.env.local src/index.ts",
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "jobs:replay": "tsx --env-file-if-exists=../../.env --env-file-if-exists=../../.env.local src/replay-cli.ts",
+    "test:concurrency": "vitest run src/outbox.concurrency.test.ts"
   },
   "dependencies": {
     "@chavi/core": "workspace:*",

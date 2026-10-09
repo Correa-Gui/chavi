@@ -7,6 +7,7 @@ import pino from 'pino';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { SYSTEM_PING, registerSystemPing } from './jobs/system-ping';
 import { relayOutboxOnce, type RelayPool } from './outbox-relay';
+import { replayOutbox } from './replay';
 
 /**
  * Critério 0.8 (T15): web → job_outbox → relay → pg-boss, com falha na 1ª tentativa, retry com
@@ -168,4 +169,54 @@ describe('outbox → pg-boss', () => {
     });
     expect(await outboxRow(id)).toMatchObject({ status: 'pending', attempts: 0 });
   });
+});
+
+describe('linhas failed da outbox', () => {
+  async function insertFailed(lastError: string): Promise<string> {
+    const { rows } = await db.query<{ id: string }>(
+      `insert into public.job_outbox (tenant_id, name, status, attempts, last_error)
+       values ($1, 'system.ping', 'failed', 5, $2) returning id`,
+      [TENANT, lastError],
+    );
+    return rows[0]!.id;
+  }
+
+  async function lastError(id: string): Promise<string | null> {
+    const { rows } = await db.query<{ last_error: string | null }>(
+      'select last_error from public.job_outbox where id = $1',
+      [id],
+    );
+    return rows[0]!.last_error;
+  }
+
+  it('guarda o último erro; jobs:replay devolve a pending e o relay conclui (limpando o erro)', async () => {
+    const id = await insertFailed('queue does not exist');
+    expect(await lastError(id)).toBe('queue does not exist');
+    // Failed não é relida pelo relay.
+    expect(await relayOutboxOnce({ pool, boss, logger })).toMatchObject({ enqueued: 0 });
+
+    expect(await replayOutbox(db, { kind: 'id', id })).toEqual([id]);
+    expect(await outboxRow(id)).toMatchObject({ status: 'pending', attempts: 0 });
+    // O erro antigo fica visível até o relay ter sucesso.
+    expect(await lastError(id)).toBe('queue does not exist');
+
+    expect(await relayOutboxOnce({ pool, boss, logger })).toMatchObject({ enqueued: 1 });
+    expect(await outboxRow(id)).toMatchObject({ status: 'enqueued', attempts: 1 });
+    expect(await lastError(id)).toBeNull();
+    await waitForJob(id);
+  }, 30_000);
+
+  it('--failed reenfileira todas as failed e não mexe em enqueued', async () => {
+    const a = await insertFailed('erro a');
+    const b = await insertFailed('erro b');
+    const ok = await insertOutbox({});
+    await relayOutboxOnce({ pool, boss, logger }); // enfileira `ok` (e só ele)
+    await waitForJob(ok);
+
+    const replayed = await replayOutbox(db, { kind: 'failed', tenantId: TENANT });
+    expect(replayed.sort()).toEqual([a, b].sort());
+    expect(await outboxRow(ok)).toMatchObject({ status: 'enqueued' });
+    // Replay por id de linha que não está failed não faz nada.
+    expect(await replayOutbox(db, { kind: 'id', id: ok })).toEqual([]);
+  }, 30_000);
 });

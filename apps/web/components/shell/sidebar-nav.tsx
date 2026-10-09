@@ -18,8 +18,25 @@ export function SidebarNav({ items }: { items: NavItem[] }) {
   return (
     <nav aria-label="Principal">
       <ul className="flex gap-1 overflow-x-auto md:flex-col md:overflow-visible">
-        {items.map(({ href, label, icon, badge }) => {
+        {items.map(({ href, label, icon, badge, soon }) => {
           const Icon = ICONS[icon];
+          if (soon) {
+            // Sem página ainda: nada de link (evita 404) nem foco; o leitor de tela ouve "desativado".
+            return (
+              <li key={href} className="shrink-0">
+                <span
+                  aria-disabled="true"
+                  className="flex min-h-11 cursor-not-allowed items-center gap-3 rounded-md px-3 text-14 font-medium text-nav-text"
+                >
+                  <Icon aria-hidden strokeWidth={2} className="size-[18px]" />
+                  <span>{label}</span>
+                  <span className="ml-auto rounded-full border border-shell-raised px-2 py-0.5 text-12 font-medium">
+                    em breve
+                  </span>
+                </span>
+              </li>
+            );
+          }
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
             <li key={href} className="shrink-0">

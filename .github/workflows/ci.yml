@@ -54,7 +54,7 @@ jobs:
       - name: Exporta variáveis do Supabase local
         run: |
           eval "$(supabase status -o env)"
-          for v in API_URL PUBLISHABLE_KEY SECRET_KEY; do
+          for v in API_URL DB_URL PUBLISHABLE_KEY SECRET_KEY; do
             if [ -z "${!v}" ]; then echo "::error::supabase status não retornou $v"; exit 1; fi
           done
           {
@@ -62,10 +62,17 @@ jobs:
             echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY"
             echo "SUPABASE_SECRET_KEY=$SECRET_KEY"
             echo "SEED_USER_PASSWORD=ci-senha-local-descartavel"
+            echo "INTEGRATION_DATABASE_URL=$DB_URL"
           } >> "$GITHUB_ENV"
       # CI=true (definido pelo GitHub) faz db:seed e test:rls aceitarem o Supabase local.
       - run: pnpm db:seed
       - run: pnpm test:rls
+      # Dois workers (dois pg-boss + dois relays) disputando a mesma outbox em Postgres real:
+      # nenhum job é enfileirado ou processado duas vezes. Falha se a URL do banco faltar.
+      - name: Concorrência da outbox (dois workers)
+        run: pnpm --filter @chavi/worker test:concurrency
+        env:
+          REQUIRE_CONCURRENCY_TEST: '1'
       # Informativo: gera os tipos a partir das migrations e mostra se o arquivo commitado está
       # defasado. Não falha o job (o cabeçalho de versão do PostgREST pode diferir da nuvem).
       - name: Confere tipos gerados (informativo)

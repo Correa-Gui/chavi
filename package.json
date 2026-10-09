@@ -15,7 +15,8 @@
     "db:seed": "pnpm --filter @chavi/scripts db:seed",
     "db:types": "pnpm --filter @chavi/scripts db:types",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "jobs:replay": "pnpm --filter @chavi/worker jobs:replay"
   },
   "devDependencies": {
     "@chavi/config": "workspace:*",

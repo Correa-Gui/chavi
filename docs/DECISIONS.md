@@ -172,6 +172,13 @@ Fase 4) não precisa reescrever o audit_log, porque ele não guarda dado pessoal
   pnpm a recusa); `lucide-react` em 1.48.0 pelo mesmo motivo.
 - Migration `20261010000000_pgboss_schema_hardening.sql` cria o schema `pgboss` sem grants para
   `anon`/`authenticated` (ADR-006). **Ainda não aplicada no chavi-dev.**
+- Linha `failed` da outbox guarda `last_error` (truncado a 300 caracteres, sem payload) e volta a
+  `pending` com `pnpm jobs:replay --id <uuid>` ou `--failed [--tenant <uuid>]`. O replay só toca
+  em linhas `failed`; o erro antigo fica até o relay ter sucesso. Job que falha depois de
+  enfileirado é estado do pg-boss, fora desse comando.
+- O job de RLS do CI roda `test:concurrency`: dois workers (dois pg-boss e dois relays) na mesma
+  outbox, em Postgres real. A migration de hardening também revoga grants de objetos já existentes,
+  então funciona qualquer que seja a ordem entre migration e primeiro start do worker.
 **Consequências:** reaplicar `apply_migration` no chavi-dev e rodar os advisors antes de usar o
 worker contra a nuvem; revisitar o pg-boss 12.37.x e o lucide quando passarem da idade mínima.
 

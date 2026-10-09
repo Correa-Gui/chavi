@@ -32,6 +32,15 @@ function main() {
     throw new Error('supabase gen types falhou (veja a saída acima).');
   }
   writeFileSync(outFile, HEADER + result.stdout);
+
+  // A CLI e o MCP formatam diferente; o Prettier do repo normaliza para o diff mostrar só schema.
+  const format = spawnSync('pnpm', ['exec', 'prettier', '--write', outFile], {
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+    stdio: ['ignore', 'ignore', 'inherit'],
+  });
+  if (format.status !== 0) throw new Error('prettier falhou ao formatar types.gen.ts.');
+
   console.log(`db:types ok: ${path.relative(process.cwd(), outFile)}`);
 }
 

@@ -78,21 +78,31 @@ describe('enqueue', () => {
 });
 
 describe('JOB_NAMES', () => {
-  it('bate com a constraint job_outbox_name_allowed da migration mais recente', () => {
-    const dir = path.resolve(
-      path.dirname(fileURLToPath(import.meta.url)),
-      '../../../supabase/migrations',
-    );
-    const sql = readdirSync(dir)
-      .filter((f) => f.endsWith('.sql'))
-      .sort()
-      .map((f) => readFileSync(path.join(dir, f), 'utf8'))
-      .join('\n');
-    // Lê a última definição da constraint (migrations futuras podem recriá-la com mais nomes).
-    const matches = [...sql.matchAll(/job_outbox_name_allowed check \(name in \(([^)]*)\)\)/g)];
-    const last = matches.at(-1)?.[1];
+  const dir = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    '../../../supabase/migrations',
+  );
+  const sql = readdirSync(dir)
+    .filter((f) => f.endsWith('.sql'))
+    .sort()
+    .map((f) => readFileSync(path.join(dir, f), 'utf8'))
+    .join('\n');
+  const names = (list: string | undefined) =>
+    [...(list ?? '').matchAll(/'([^']+)'/g)].map((m) => m[1]).sort();
+
+  it('bate com os jobs que a policy job_outbox_insert deixa o usuário pedir', () => {
+    // Última definição da policy (migrations futuras podem recriá-la).
+    const policies = [...sql.matchAll(/create policy job_outbox_insert[\s\S]*?;/g)];
+    const last = policies.at(-1)?.[0];
     expect(last).toBeDefined();
-    const inDb = [...(last ?? '').matchAll(/'([^']+)'/g)].map((m) => m[1]).sort();
-    expect(inDb).toEqual([...JOB_NAMES].sort());
+    const inPolicy = /and name in \(([^)]*)\)/.exec(last ?? '')?.[1];
+    expect(inPolicy, 'a policy precisa restringir name').toBeDefined();
+    expect(names(inPolicy)).toEqual([...JOB_NAMES].sort());
+  });
+
+  it('é um subconjunto da constraint job_outbox_name_allowed', () => {
+    const constraints = [...sql.matchAll(/job_outbox_name_allowed check \(name in \(([^)]*)\)\)/g)];
+    const inDb = names(constraints.at(-1)?.[1]);
+    for (const name of JOB_NAMES) expect(inDb).toContain(name);
   });
 });

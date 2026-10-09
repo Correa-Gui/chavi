@@ -1,0 +1,148 @@
+/*
+ * Tokens visuais da direção "Brasa" (docs/DESIGN.md). Tailwind 4, sem preset (ADR-009).
+ * Importado por apps/web/app/globals.css depois de `@import "tailwindcss"`.
+ * Não invente cor, fonte ou raio fora desta lista.
+ */
+
+@theme {
+  /* Cores base */
+  --color-shell: #0d0f14;
+  --color-shell-raised: #1a1d25;
+  --color-panel: #f4f1ec;
+  --color-surface: #ffffff;
+  --color-column: #eae4db;
+  --color-line: #f0ece6;
+  --color-ink: #14161c;
+  --color-ink-2: #57514a;
+  --color-ink-3: #6b6458;
+  --color-nav-text: #a1a1aa;
+  --color-accent: #ff6b2c;
+
+  /* Status: fundo, texto e avatar. Sempre acompanhados de texto (DESIGN.md, acessibilidade). */
+  --color-hot-bg: #ffe4d6;
+  --color-hot-fg: #9a3412;
+  --color-hot-avatar: #ffd3bd;
+  --color-warm-bg: #fef3c7;
+  --color-warm-fg: #78350f;
+  --color-warm-avatar: #fde68a;
+  --color-cold-bg: #dbeafe;
+  --color-cold-fg: #1e3a8a;
+  --color-cold-avatar: #bfdbfe;
+  --color-triage-bg: #e9e8ff;
+  --color-triage-fg: #3730a3;
+  --color-triage-avatar: #dddcff;
+  --color-out-bg: #f0ece6;
+  --color-out-fg: #57514a;
+  --color-out-avatar: #e7e2da;
+  --color-sla-bg: #ffe4d6;
+  --color-sla-fg: #7c2d12;
+  --color-won-bg: #1f232d;
+  --color-won-fg: #86efac;
+
+  /* Escala tipográfica (px): 12 / 13 / 14 / 15 / 19 / 20 / 30 / 40 / 48 */
+  --text-12: 12px;
+  --text-13: 13px;
+  --text-14: 14px;
+  --text-15: 15px;
+  --text-19: 19px;
+  --text-20: 20px;
+  --text-30: 30px;
+  --text-40: 40px;
+  --text-48: 48px;
+
+  /* Raios: 10 botão pequeno, 12 botão/input, 16 card do kanban, 20-22 cards, 24 painel */
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 22px;
+  --radius-3xl: 24px;
+
+  /* Easing e animações (tabela de movimento do DESIGN.md) */
+  --ease-brasa: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --animate-enter: enter 0.6s var(--ease-brasa) both;
+  --animate-message-in: message-in 0.4s var(--ease-brasa) both;
+  --animate-bar-grow: bar-grow 1.1s var(--ease-brasa) both;
+  --animate-pulse-ring: pulse-ring 1.8s ease-out infinite;
+  --animate-typing: typing 1.2s ease-in-out infinite;
+  --animate-shimmer: shimmer 2.4s linear infinite;
+
+  @keyframes enter {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes message-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.92);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  @keyframes bar-grow {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+  @keyframes pulse-ring {
+    0% {
+      box-shadow: 0 0 0 0 rgb(255 107 44 / 0.55);
+    }
+    80%,
+    100% {
+      box-shadow: 0 0 0 10px rgb(255 107 44 / 0);
+    }
+  }
+  @keyframes typing {
+    0%,
+    80%,
+    100% {
+      opacity: 0.25;
+    }
+    40% {
+      opacity: 1;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: -200% 0;
+    }
+    to {
+      background-position: 200% 0;
+    }
+  }
+}
+
+/*
+ * Fontes: as variáveis CSS vêm do next/font em apps/web/app/layout.tsx.
+ * `inline` faz o utilitário apontar direto para var(--font-*), em vez de uma cópia fixa.
+ */
+@theme inline {
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Movimento reduzido: desliga todas as animações e transições (DESIGN.md, Movimento). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

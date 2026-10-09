@@ -180,8 +180,19 @@ Fase 4) não precisa reescrever o audit_log, porque ele não guarda dado pessoal
 - O job de RLS do CI roda `test:concurrency`: dois workers (dois pg-boss e dois relays) na mesma
   outbox, em Postgres real. A migration de hardening também revoga grants de objetos já existentes,
   então funciona qualquer que seja a ordem entre migration e primeiro start do worker.
+- **Aviso aceito do advisor `function_search_path_mutable`** (2026-10-09) nas funções que o próprio
+  pg-boss cria em `pgboss` (`create_queue`, `delete_queue`, `job_now`, `job_table_run`,
+  `job_table_run_async`, `job_table_format`). Motivo: são objetos da biblioteca, recriados nas
+  migrations internas do pg-boss (um `alter function ... set search_path` nosso seria desfeito numa
+  atualização); o schema `pgboss` não é exposto pela Data API e `anon`/`authenticated` não têm
+  nenhum privilégio nele (migration de hardening), então só o dono do banco executa essas funções
+  e ninguém de fora consegue criar objetos no `search_path` delas. Reavaliar se o pg-boss passar a
+  fixar `search_path` ou se o schema for exposto.
 **Consequências:** reaplicar `apply_migration` no chavi-dev e rodar os advisors antes de usar o
 worker contra a nuvem; revisitar o pg-boss 12.37.x e o lucide quando passarem da idade mínima.
+**Pendência para o projeto de produção:** ligar a proteção contra senha vazada do Supabase Auth
+(advisor `auth_leaked_password_protection`; Authentication > Providers > Email). No chavi-dev fica
+desligada: o login real é por OTP e só os usuários de teste têm senha.
 
 ## ADR-017: Marco Demo publicado numa VPS da Hostinger com Docker Compose (2026-10-09)
 **Contexto:** o fundador tem uma VPS KVM na Hostinger e domínio próprio, e a Evolution API já roda

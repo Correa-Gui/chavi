@@ -152,9 +152,14 @@ Fora do escopo: simulador, CSV, distribuição, SLA, convite (T9), inatividade d
   - `deploy.sh`: `git pull` + `docker compose up -d --build`.
   - `/api/health`. Logs JSON do worker via `docker logs`.
   - Segredos num `.env` na VPS, preenchido pelo fundador.
+- **SMTP próprio no Supabase Auth (Resend)**, para o código de login chegar rápido e fora do spam:
+  - Domínio de envio verificado no Resend (registros SPF, DKIM e DMARC no DNS da Hostinger), ex.: `login@seudominio.com.br`.
+  - Supabase > Authentication > SMTP Settings com host, porta, usuário e chave do Resend (preenchidos pelo fundador; a chave não entra no repositório).
+  - Template do e-mail de OTP em pt-BR mostrando `{{ .Token }}`. Limite de envio do Auth ajustado para a demo.
+  - Antecipa a pendência de SMTP próprio do ADR-010 (que o piloto exige de qualquer forma).
 - **Roteiro da demo** em `docs/plans/roteiro-demo.md`: o que mostrar, de qual número mandar mensagem e como resetar.
 - **Aceite**:
-  - O site abre em `https://APP_DOMAIN` com login OTP.
+  - O site abre em `https://APP_DOMAIN` com login OTP; o e-mail do código chega pelo Resend em menos de 1 minuto, na caixa de entrada (não no spam) de Gmail e Outlook.
   - Uma mensagem real enviada ao número de teste vira lead "Em triagem" no painel em < 10 s. A IA conduz as 5 perguntas, o lead termina classificado e a ficha mostra a conversa e os motivos.
   - e2e Playwright de login + telas com dados de seed (4.1 parcial, 4.2, 4.4).
   - CI verde.

@@ -28,7 +28,7 @@ escopo: simulador, CSV, distribuição, SLA e convite. Plano e critérios de ace
 - [ ] D1 · Tabelas de leads, conversas e triagem com RLS e testes; normalização de telefone; login OTP; tenant "Demo Imóveis" com dados fictícios
 - [ ] D2 · `WhatsAppGateway` + `EvolutionAdapter`; webhook idempotente → outbox → `whatsapp.ingest` → lead
 - [ ] D3 · `LlmClient` (OpenAI), `TriageEngine`, `RulesScorerV1`, job `triage.step`, `ai_decisions` e eval
-- [ ] D4 · Painel, funil e ficha com dados reais; publicação na VPS com Docker Compose e Caddy; roteiro da demo
+- [ ] D4 · Painel, funil e ficha com dados reais; publicação na VPS com Docker Compose e Caddy; SMTP próprio (Resend) no Supabase Auth; roteiro da demo
 
 ## Fase 1: Captura e tratamento · M
 Objetivo: lead entra por qualquer origem do MVP, sem duplicar, com origem e consentimento.

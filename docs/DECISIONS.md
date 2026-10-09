@@ -132,6 +132,25 @@ credencial por server action e nunca a devolve ao browser (no máximo um indicad
 **Consequências:** a tabela de credenciais nasce na Fase 1 junto com o `EvolutionAdapter`, com
 teste em `pnpm test:rls` provando que nenhum papel a lê.
 
+## ADR-015: audit_log sobrevive à exclusão do tenant e não guarda dado pessoal (2026-10-09)
+**Contexto:** na primeira migration, `audit_log.tenant_id` era FK para `tenants` com
+`on delete cascade` e a auditoria de memberships gravava a linha inteira (`to_jsonb`). Apagar um
+tenant apagava todo o histórico dele, e qualquer coluna nova com dado pessoal entraria no log.
+**Decisão:**
+- `audit_log.tenant_id` continua obrigatório e indexado, mas **sem FK**: o histórico continua
+  existindo depois que o tenant é apagado. Essas linhas ficam legíveis só pela chave secret
+  (nenhum usuário é mais admin do tenant apagado).
+- A exclusão do tenant é registrada (`entity = 'tenants'`, `action = 'delete'`, com nome e slug
+  da empresa), assim como a remoção em cascade das memberships.
+- `before`/`after` são montados com **allowlist de campos por entidade** (memberships: `role`,
+  `active`). Proibido `to_jsonb(linha)` em função de auditoria.
+- Rede de proteção: a constraint `audit_log_no_personal_data` recusa chaves como `email`,
+  `phone_e164`, `full_name`, `renda`, `income_cents` e `cpf` no primeiro nível de `before`/`after`.
+- Identificadores (`user_id`, `actor_id`, `entity_id`) podem ficar: não são dado de contato.
+**Consequências:** toda nova função de auditoria lista os campos explicitamente; a lista da
+constraint cresce junto com o schema (ex.: campos de lead na Fase 1). Exclusão de titular (LGPD,
+Fase 4) não precisa reescrever o audit_log, porque ele não guarda dado pessoal.
+
 ---
 
 ## Perguntas em aberto (responder antes da fase indicada)

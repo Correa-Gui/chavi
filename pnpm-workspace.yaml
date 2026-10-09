@@ -1,0 +1,8 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm 11: scripts de instalação só para dependências explicitamente liberadas.
+allowBuilds:
+  esbuild: true
+  unrs-resolver: false

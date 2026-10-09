@@ -1,0 +1,18 @@
+node_modules/
+.next/
+.turbo/
+dist/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# segredos: nunca commitar valores reais
+.env
+.env.*
+!.env.example
+
+# supabase CLI
+supabase/.branches/
+supabase/.temp/
+
+.DS_Store

@@ -23,7 +23,7 @@ const VALID_DDDS = new Set([
 export function normalizePhoneBR(input: string): PhoneResult {
   const trimmed = input.trim();
   if (trimmed === '') return { ok: false, reason: 'vazio' };
-  if (!/^[\d\s()+.\-]+$/.test(trimmed)) return { ok: false, reason: 'caracteres_invalidos' };
+  if (!/^[\d\s()+.-]+$/.test(trimmed)) return { ok: false, reason: 'caracteres_invalidos' };
 
   let digits = trimmed.replace(/\D/g, '');
   if (digits.startsWith('55') && (digits.length === 12 || digits.length === 13)) {

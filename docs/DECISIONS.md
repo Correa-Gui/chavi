@@ -121,6 +121,17 @@ engano. Onde os documentos dizem "service role", leia-se "chave secret"; a regra
 e o ADR-007 valem do mesmo jeito. O fundador preenche `.env.local`; o assistente não o lê.
 **Consequências:** as chaves legadas não são usadas e podem ser desativadas no painel depois.
 
+## ADR-014: `tenants.settings` nunca guarda segredos (2026-10-09)
+**Contexto:** a política `tenants_select` deixa todo membro ativo do tenant ler a linha inteira,
+inclusive `settings`.
+**Decisão:** `tenants.settings` guarda só configuração não sensível (limites do scorer, perguntas
+da triagem, SLA etc.). Credenciais de integração (Evolution API, tokens da Meta, chaves de
+provedores) ficam numa tabela própria, com `tenant_id` e RLS habilitado, **sem nenhum privilégio
+de leitura para `authenticated`**; só o worker (chave secret) lê. A tela de configuração grava a
+credencial por server action e nunca a devolve ao browser (no máximo um indicador "configurado").
+**Consequências:** a tabela de credenciais nasce na Fase 1 junto com o `EvolutionAdapter`, com
+teste em `pnpm test:rls` provando que nenhum papel a lê.
+
 ---
 
 ## Perguntas em aberto (responder antes da fase indicada)

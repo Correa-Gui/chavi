@@ -4,6 +4,7 @@ node_modules
 dist
 coverage
 pnpm-lock.yaml
+packages/db/src/types.gen.ts
 supabase/migrations
 docs
 prompts

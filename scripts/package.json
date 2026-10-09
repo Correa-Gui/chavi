@@ -9,6 +9,7 @@
   },
   "scripts": {
     "db:seed": "tsx --env-file-if-exists=../.env --env-file-if-exists=../.env.local src/seed-users.ts",
+    "db:types": "tsx --env-file-if-exists=../.env --env-file-if-exists=../.env.local src/gen-types.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"
   },

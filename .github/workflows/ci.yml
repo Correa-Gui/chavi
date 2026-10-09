@@ -66,3 +66,10 @@ jobs:
       # CI=true (definido pelo GitHub) faz db:seed e test:rls aceitarem o Supabase local.
       - run: pnpm db:seed
       - run: pnpm test:rls
+      # Informativo: gera os tipos a partir das migrations e mostra se o arquivo commitado está
+      # defasado. Não falha o job (o cabeçalho de versão do PostgREST pode diferir da nuvem).
+      - name: Confere tipos gerados (informativo)
+        run: |
+          pnpm --filter @chavi/scripts exec tsx src/gen-types.ts --local
+          git diff --stat -- packages/db/src/types.gen.ts
+          git diff -- packages/db/src/types.gen.ts | head -40

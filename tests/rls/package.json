@@ -1,0 +1,21 @@
+{
+  "name": "@chavi/test-rls",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:rls": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@chavi/scripts": "workspace:*",
+    "@supabase/supabase-js": "2.117.3",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@chavi/config": "workspace:*",
+    "@types/node": "26.6.4",
+    "typescript": "6.0.3",
+    "vitest": "5.0.3"
+  }
+}

@@ -15,7 +15,7 @@ concurrency:
 jobs:
   quality:
     name: Lint, tipos e testes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -33,33 +33,36 @@ jobs:
 
   rls:
     name: Isolamento entre tenants (Supabase local)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
-    # Só liga quando o projeto Supabase existir (T3). Antes disso o job passa sem fazer nada.
     steps:
       - uses: actions/checkout@v7
-      - id: has_supabase
-        run: |
-          if [ -f supabase/config.toml ]; then echo "enabled=true" >> "$GITHUB_OUTPUT"; fi
-      - if: steps.has_supabase.outputs.enabled == 'true'
-        uses: pnpm/action-setup@v6
-      - if: steps.has_supabase.outputs.enabled == 'true'
-        uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
-      - if: steps.has_supabase.outputs.enabled == 'true'
-        uses: supabase/setup-cli@v3
+      - uses: supabase/setup-cli@v3
         with:
           version: 2.120.0
-      - if: steps.has_supabase.outputs.enabled == 'true'
-        run: pnpm install --frozen-lockfile
-      - if: steps.has_supabase.outputs.enabled == 'true'
-        run: supabase start
-      - if: steps.has_supabase.outputs.enabled == 'true'
-        run: supabase db reset
-      # CI=true faz db:seed e test:rls aceitarem o Supabase local (ADR-008, ADR-010).
-      - if: steps.has_supabase.outputs.enabled == 'true'
-        run: pnpm run --if-present db:seed
-      - if: steps.has_supabase.outputs.enabled == 'true'
-        run: pnpm run --if-present test:rls
+      - run: pnpm install --frozen-lockfile
+      # Falha o job se o Supabase local não subir ou se alguma migration quebrar.
+      - run: supabase start
+      # Critério 0.2: o banco é recriado do zero a partir das migrations + seed.sql.
+      - run: supabase db reset
+      # Chaves do Supabase local (descartáveis, geradas no runner) para seed e testes.
+      - name: Exporta variáveis do Supabase local
+        run: |
+          eval "$(supabase status -o env)"
+          for v in API_URL PUBLISHABLE_KEY SECRET_KEY; do
+            if [ -z "${!v}" ]; then echo "::error::supabase status não retornou $v"; exit 1; fi
+          done
+          {
+            echo "SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY"
+            echo "SUPABASE_SECRET_KEY=$SECRET_KEY"
+            echo "SEED_USER_PASSWORD=ci-senha-local-descartavel"
+          } >> "$GITHUB_ENV"
+      # CI=true (definido pelo GitHub) faz db:seed e test:rls aceitarem o Supabase local.
+      - run: pnpm db:seed
+      - run: pnpm test:rls

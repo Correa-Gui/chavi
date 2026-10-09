@@ -1,9 +1,16 @@
 'use client';
 
+import { Columns3, Settings, Users, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import type { NavItem } from './nav-items';
+import type { NavIcon, NavItem } from './nav-items';
+
+const ICONS: Record<NavIcon, LucideIcon> = {
+  leads: Users,
+  funil: Columns3,
+  configuracoes: Settings,
+};
 
 /** Itens do menu. Vertical no desktop, faixa rolável no celular. */
 export function SidebarNav({ items }: { items: NavItem[] }) {
@@ -11,7 +18,8 @@ export function SidebarNav({ items }: { items: NavItem[] }) {
   return (
     <nav aria-label="Principal">
       <ul className="flex gap-1 overflow-x-auto md:flex-col md:overflow-visible">
-        {items.map(({ href, label, icon: Icon, badge }) => {
+        {items.map(({ href, label, icon, badge }) => {
+          const Icon = ICONS[icon];
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
             <li key={href} className="shrink-0">
